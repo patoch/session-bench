@@ -23,6 +23,7 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
         int maxBytes = 50 * 1024;
         int addBytes = 1024;
         String consistency = "P3";
+        Boolean deleteSessions = true;
 
         if (context.containsParameter("MAXBYTES")) {
             maxBytes = context.getIntParameter("MAXBYTES");
@@ -31,7 +32,10 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
             addBytes = context.getIntParameter("ADDBYTES");
         }
         if (context.containsParameter("CONSISTENCY")) {
-            addBytes = context.getIntParameter("CONSISTENCY");
+            consistency = context.getParameter("CONSISTENCY");
+        }
+        if (context.containsParameter("DELETESESSIONS")) {
+            deleteSessions = context.getIntParameter("DELETESESSIONS") == 1;
         }
 
         SampleResult transaction = new SampleResult();transaction.setSampleLabel("Session update latency");
@@ -100,7 +104,9 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
         // check if round is over
         if (session.getJson().length() >= maxBytes) {
             try {
-                dao.delete(session, consistency);
+                if (deleteSessions) {
+                    dao.delete(session, consistency);
+                }
             } catch (Throwable t) {
                 transaction.setSuccessful(false);
                 transaction.setSampleLabel("DELETE:" + t.getMessage());
