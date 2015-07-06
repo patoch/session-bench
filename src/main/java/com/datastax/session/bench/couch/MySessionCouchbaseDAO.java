@@ -1,6 +1,7 @@
 package com.datastax.session.bench.couch;
 
-import com.couchbase.client.java.document.BinaryDocument;
+import com.couchbase.client.java.PersistTo;
+import com.couchbase.client.java.ReplicateTo;
 import com.couchbase.client.java.document.StringDocument;
 import com.datastax.session.bench.MySession;
 import com.datastax.session.bench.MySessionDAO;
@@ -19,19 +20,52 @@ public class MySessionCouchbaseDAO implements MySessionDAO {
         return onlyInstance;
     }
 
-    public void save(MySession session) {
+    public void save(MySession session, String consistency) throws Throwable {
         StringDocument doc = StringDocument.create(session.getId(), session.getJson());
-        Couchbase.getBucket().insert(doc);
-
+        if (consistency.startsWith("R")) {
+            Couchbase.getBucket().upsert(doc, getReplicateTo(consistency));
+        } else {
+            Couchbase.getBucket().upsert(doc, getPersistTo(consistency));
+        }
     }
 
-    public MySession load(MySession session) {
+    public MySession load(MySession session) throws Throwable {
         StringDocument doc = Couchbase.getBucket().get(session.getId(), StringDocument.class);
-        session.setJson(doc.content());
+        if (doc != null) {
+            session.setJson(doc.content());
+        }
         return session;
     }
 
-    public void delete(MySession session) {
-        Couchbase.getBucket().remove(session.getId());
+    public void delete(MySession session, String consistency) throws Throwable {
+        if (consistency.startsWith("R")) {
+            Couchbase.getBucket().remove(session.getId(), getReplicateTo(consistency));
+        } else {
+            Couchbase.getBucket().remove(session.getId(), getPersistTo(consistency));
+        }
+    }
+
+    private PersistTo getPersistTo(String consistency) {
+        if ("P1".equals(consistency)) {
+            return PersistTo.ONE;
+        } else if ("P2".equals(consistency)) {
+            return PersistTo.TWO;
+        } else if ("P3".equals(consistency)) {
+            return PersistTo.THREE;
+        } else {
+            return PersistTo.NONE;
+        }
+    }
+
+    private ReplicateTo getReplicateTo(String consistency) {
+        if ("P1".equals(consistency)) {
+            return ReplicateTo.ONE;
+        } else if ("P2".equals(consistency)) {
+            return ReplicateTo.TWO;
+        } else if ("P3".equals(consistency)) {
+            return ReplicateTo.THREE;
+        } else {
+            return ReplicateTo.NONE;
+        }
     }
 }

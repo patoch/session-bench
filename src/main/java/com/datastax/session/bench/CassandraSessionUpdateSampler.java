@@ -12,5 +12,9 @@ public class CassandraSessionUpdateSampler extends SessionUpdateSampler {
         dao = MySessionCassandraDAO.getInstance();
     }
 
+    public CassandraSessionUpdateSampler() {
+        super();
+    }
+
 }
 

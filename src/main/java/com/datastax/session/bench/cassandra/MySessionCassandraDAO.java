@@ -27,7 +27,7 @@ public class MySessionCassandraDAO implements MySessionDAO {
         Cassandra.prepareStatement("delete", "DELETE FROM bench_ks.sessions WHERE id=?");
     }
 
-    public void save(MySession session) {
+    public void save(MySession session, String consistency) {
         BoundStatement bs = Cassandra.getPreparedStatement("insert").bind(session.getId(), session.getJson());
         Cassandra.getSession().execute(bs);
     }
@@ -42,7 +42,7 @@ public class MySessionCassandraDAO implements MySessionDAO {
         return session;
     }
 
-    public void delete(MySession session) {
+    public void delete(MySession session, String consistency) {
         BoundStatement bs = Cassandra.getPreparedStatement("delete").bind(session.getId());
         Cassandra.getSession().execute(bs);
     }

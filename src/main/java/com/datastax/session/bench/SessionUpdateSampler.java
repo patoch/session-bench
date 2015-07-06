@@ -1,6 +1,5 @@
 package com.datastax.session.bench;
 
-import com.datastax.session.bench.cassandra.MySessionCassandraDAO;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
@@ -16,17 +15,14 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
 
     protected static Map<Long, Integer> roundsByThread = new HashMap<Long, Integer>();
     protected static MySessionDAO dao;
-    protected static boolean consitencyCheckOn = true;
-
-    static {
-        dao = MySessionCassandraDAO.getInstance();
-    }
+    protected static boolean consistencyCheckOn = true;
 
 
     public SampleResult runTest(JavaSamplerContext context) {
 
         int maxBytes = 50 * 1024;
         int addBytes = 1024;
+        String consistency = "P3";
 
         if (context.containsParameter("MAXBYTES")) {
             maxBytes = context.getIntParameter("MAXBYTES");
@@ -34,10 +30,14 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
         if (context.containsParameter("ADDBYTES")) {
             addBytes = context.getIntParameter("ADDBYTES");
         }
+        if (context.containsParameter("CONSISTENCY")) {
+            addBytes = context.getIntParameter("CONSISTENCY");
+        }
 
         SampleResult transaction = new SampleResult();transaction.setSampleLabel("Session update latency");
         SampleResult read = new SampleResult();read.setSampleLabel("Read latency");
         SampleResult write = new SampleResult();write.setSampleLabel("Write Latency");
+
 
         // build session id
         long threadId =Thread.currentThread().getId();
@@ -54,7 +54,13 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
 
         // read
         read.sampleStart();
-        session = dao.load(session);
+        try {
+            session = dao.load(session);
+        } catch (Throwable t) {
+            transaction.setSuccessful(false);
+            transaction.setSampleLabel(session.getId() + "|R|" + t.getMessage());
+            return transaction;
+        }
         read.sampleEnd();read.setSuccessful(true);read.setBytes(session.getJson().length());
 
         // append data
@@ -64,36 +70,54 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
 
         // write
         write.sampleStart();
-        dao.save(session);
-
-        write.sampleEnd();write.setSuccessful(true);write.setBytes(session.getJson().length());
-
-        transaction.sampleEnd();transaction.setSuccessful(true);transaction.setBytes(session.getJson().length());
-
-        // check consistency
-        String md52=dao.load(session).getMD5();
-        String json2 = dao.load(session).getJson();
-        if (!md52.equals(md5)) {
+        try {
+            dao.save(session, consistency);
+        } catch (Throwable t) {
             transaction.setSuccessful(false);
-            transaction.setResponseCode("INCONSISTENT");
-            System.out.println("INCONSISTENT MD5 = " + md5 + "/" + md52);
+            transaction.setSampleLabel(session.getId() + "|W|" + t.getMessage());
+            return transaction;
+        }
+        write.sampleEnd();
+        write.setBytes(session.getJson().length());
+
+        transaction.sampleEnd();
+
+
+        try {
+            // check consistency
+            String md52 = dao.load(session).getMD5();
+            String json2 = dao.load(session).getJson();
+            if (consistencyCheckOn && !md52.equals(md5)) {
+                transaction.setSuccessful(false);
+                transaction.setSampleLabel(session.getId() + "|R|inconsistent");
+            }
+        } catch (Throwable t) {
+            transaction.setSuccessful(false);
+            transaction.setSampleLabel("ERROR ON CONSISTENCY CHECK" + t.getMessage());
+            return transaction;
         }
 
         // check if round is over
-        if (consitencyCheckOn && session.getJson().length() >= maxBytes) {
-            dao.delete(session);
+        if (session.getJson().length() >= maxBytes) {
+            try {
+                dao.delete(session, consistency);
+            } catch (Throwable t) {
+                transaction.setSuccessful(false);
+                transaction.setSampleLabel("DELETE:" + t.getMessage());
+                return transaction;
+            }
             roundsByThread.put(threadId, roundsByThread.get(threadId) + 1);
         }
 
+        transaction.setSampleLabel(session.getId() + "|updated");
+        transaction.setSuccessful(true);transaction.setBytes(session.getJson().length());
+        
         // pause
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
-            e.printStackTrace();
         }
 
-        transaction.addRawSubResult(write);
-        transaction.addRawSubResult(read);
         return transaction;
     }
 

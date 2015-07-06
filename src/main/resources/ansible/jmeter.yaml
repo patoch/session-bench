@@ -1,0 +1,31 @@
+#
+# Install JMeter on Ubuntu
+#
+- name: General setup
+  hosts: jmeter
+  user: root
+
+  tasks:
+    - name: Install add-apt-repostory
+      apt: name=software-properties-common state=latest
+
+    - name: Add Oracle Java Repository
+      apt_repository: repo='ppa:webupd8team/java'
+
+    - name: Accept Java 8 Licence
+      shell: echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | tee /etc/oracle-java-8-licence-acceptance | /usr/bin/debconf-set-selections
+      args:
+        creates: /etc/oracle-java-8-licence-acceptance
+
+    - name: Install Oracle Java 8
+      apt: name={{item}} state=latest
+      with_items:
+        - oracle-java8-installer
+        - ca-certificates
+        - oracle-java8-set-default
+
+    - name: Download JMeter
+      get_url: url={{jmeter_download_url}} dest=/tmp
+
+    - name: Unarchive JMeter
+      unarchive: src=/tmp/{{jmeter_tgz}} dest=~/. copy=no

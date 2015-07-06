@@ -14,13 +14,13 @@ public class Couchbase {
 
     public static synchronized Cluster getCluster() {
         if (cluster == null) {
-            cluster = CouchbaseCluster.create("127.0.0.1");
+            cluster = CouchbaseCluster.create("84.40.63.130");
         }
         return cluster;
     }
 
     public static synchronized Bucket getBucket() {
-        bucket = getCluster().openBucket("session-bucket");
+        bucket = getCluster().openBucket("bench-bucket");
         return bucket;
     }
 

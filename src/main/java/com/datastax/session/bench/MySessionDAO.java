@@ -7,10 +7,10 @@ package com.datastax.session.bench;
 public interface MySessionDAO {
 
 
-    void save(MySession session);
+    void save(MySession session, String consistency) throws Throwable;
 
-    MySession load(MySession session);
+    MySession load(MySession session) throws Throwable;
 
-    void delete(MySession session);
+    void delete(MySession session, String consistency) throws Throwable;
 
 }

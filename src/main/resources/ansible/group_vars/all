@@ -1,0 +1,18 @@
+# Couchbase version
+couchbase_download_url: http://packages.couchbase.com/releases/3.0.3/couchbase-server-enterprise_3.0.3-ubuntu12.04_amd64.deb
+deb_file: couchbase-server-enterprise_3.0.3-ubuntu12.04_amd64.deb
+
+# Admin password
+admin_user: Administrator
+admin_password: datastax
+
+# Node setting
+cluster_ram_quota: 5120
+bucket_name: bench-bucket
+bucket_ram_quota: 5120
+num_replicas: 2
+
+# JMeter download
+jmeter_download_url: https://github.com/patoch/session-bench/raw/master/src/main/resources/ansible/files/apache-jmeter-2.13.tgz
+
+jmeter_tgz: apache-jmeter-2.13.tgz

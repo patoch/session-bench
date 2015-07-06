@@ -1,0 +1,48 @@
+---
+#
+# Install Couchbase cluster on Ubuntu 12.04
+# Initialize admin and create bucket
+#
+- name: General setup
+  hosts: none #couchbase-nodes
+  user: root
+
+  tasks:
+
+  - name: Install dependencies
+    apt: pkg=ntp state=present
+
+  - name: Create shell script for os setup
+    action: template src=./files/setup.sh dest=/tmp/setup.sh mode=750
+
+  - name: Launch config script
+    action: shell /tmp/setup.sh
+
+
+- name: Couchbase installation
+  hosts: none #couchbase-nodes
+  user: root
+
+  tasks:
+
+  - name: Download Couchbase
+    get_url: url={{couchbase_download_url}} dest=~/.
+
+  - name: Install dependencies
+    apt: pkg=libssl0.9.8 state=present
+
+  - name: Install Couchbase .deb file
+    shell: dpkg -i ~/{{deb_file}}
+
+
+- name: Cluster initialization
+  hosts: couchbase-nodes
+  user: root
+
+  tasks:
+
+  - name: Configure main node
+    shell: /opt/couchbase/bin/couchbase-cli cluster-init -c 127.0.0.1:8091  --cluster-init-username={{admin_user}} --cluster-init-password={{admin_password}} --cluster-init-port=8091 --cluster-init-ramsize={{cluster_ram_quota}}
+
+  - name: Create bucket {{bucket_name}} with ${num_replicas} replicas
+    shell: /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 --bucket={{bucket_name}} --bucket-type=couchbase --bucket-port=11211 --bucket-ramsize={{bucket_ram_quota}}  --bucket-replica={{num_replicas}} -u {{admin_user}} -p {{admin_password}}
