@@ -14,7 +14,7 @@ public class Couchbase {
 
     public static synchronized Cluster getCluster() {
         if (cluster == null) {
-            cluster = CouchbaseCluster.create("84.40.63.130");
+            cluster = CouchbaseCluster.create("cb1","cb2","cb3");
         }
         return cluster;
     }

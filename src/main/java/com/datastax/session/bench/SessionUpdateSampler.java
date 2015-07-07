@@ -97,7 +97,7 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
             }
         } catch (Throwable t) {
             transaction.setSuccessful(false);
-            transaction.setSampleLabel("ERROR ON CONSISTENCY CHECK" + t.getMessage());
+            transaction.setSampleLabel(session.getId() + "|R|inconsistent during consitency check|" +  t.getMessage());
             return transaction;
         }
 
@@ -109,7 +109,7 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
                 }
             } catch (Throwable t) {
                 transaction.setSuccessful(false);
-                transaction.setSampleLabel("DELETE:" + t.getMessage());
+                transaction.setSampleLabel(session.getId() + "|D|" + t.getMessage());
                 return transaction;
             }
             roundsByThread.put(threadId, roundsByThread.get(threadId) + 1);
