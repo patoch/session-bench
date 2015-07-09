@@ -12,26 +12,28 @@ The scenario :
     * when MAXBYTES is reached, delete the session
     
 
-1. Setup your machines, 3 nodes at least for the cluster and 1+ for JMeter 
+**Running the test :**
+
+* Setup your machines, 3 nodes at least for the cluster and 1+ for JMeter 
 
 
-2. Add ip's to your /etc/hosts
+* Add ip's to your /etc/hosts
 Add to your desktop's /etc/hosts the ip of the machines: cb1, cb2, cb3 and jm1 (you may add more by modifying ansible's inventory).
 
-3. Build the sampler:
+* Build the sampler
 At the project root:
 ```
 mvn package
 ```
 
-4. Deploy Couchbase
+* Deploy Couchbase
 From session-bench/src/main/resources/ansible :
 ```
 ansible-playbook -i hosts couchbase.yaml
 ```
 Go to cb1:8091 and add other nodes to the cluster.
 
-5. Deploy JMeter
+* Deploy JMeter
 From session-bench/src/main/resources/ansible :
 ```
 ansible-playbook -i hosts jmeter.yaml
@@ -41,12 +43,8 @@ Add the jmeter test file session-bench/src/main/resources/benchsessions.jmx to a
 Add the couchbase ip's to the jmeter /etc/hosts file.
 
 
-6. Run the test
+* Run the test
 From jm1, at apache-jmeter-2.0.13
 ```
 ./bin/jmeter -n -t benchsessions.jmx
 ```
-
-
-
-
