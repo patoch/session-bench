@@ -29,4 +29,8 @@ public class Couchbase {
         cluster.disconnect();
     }
 
+    @Override
+    protected void finalize() throws Throwable {
+        Couchbase.close();
+    }
 }

@@ -62,7 +62,10 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
             session = dao.load(session);
         } catch (Throwable t) {
             transaction.setSuccessful(false);
-            transaction.setSampleLabel(session.getId() + "|R|" + t.getMessage());
+            if (deleteSessions)
+                transaction.setSampleLabel("Update session");
+            else
+                transaction.setSampleLabel(session.getId() + "|R|" + t.getMessage());
             return transaction;
         }
         read.sampleEnd();read.setSuccessful(true);read.setBytes(session.getJson().length());
@@ -78,7 +81,10 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
             dao.save(session, consistency);
         } catch (Throwable t) {
             transaction.setSuccessful(false);
-            transaction.setSampleLabel(session.getId() + "|W|" + t.getMessage());
+            if (deleteSessions)
+                transaction.setSampleLabel("Update session");
+            else
+                transaction.setSampleLabel(session.getId() + "|W|" + t.getMessage());
             return transaction;
         }
         write.sampleEnd();
@@ -93,11 +99,17 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
             String json2 = dao.load(session).getJson();
             if (consistencyCheckOn && !md52.equals(md5)) {
                 transaction.setSuccessful(false);
-                transaction.setSampleLabel(session.getId() + "|R|inconsistent");
+                if (deleteSessions)
+                    transaction.setSampleLabel("Update session");
+                else
+                    transaction.setSampleLabel(session.getId() + "|R|inconsistent");
             }
         } catch (Throwable t) {
             transaction.setSuccessful(false);
-            transaction.setSampleLabel(session.getId() + "|R|inconsistent during consitency check|" +  t.getMessage());
+            if (deleteSessions)
+                transaction.setSampleLabel("Update session");
+            else
+                transaction.setSampleLabel(session.getId() + "|CCR|" +  t.getMessage());
             return transaction;
         }
 
@@ -109,13 +121,18 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
                 }
             } catch (Throwable t) {
                 transaction.setSuccessful(false);
-                transaction.setSampleLabel(session.getId() + "|D|" + t.getMessage());
+                if (deleteSessions)
+                    transaction.setSampleLabel("Update session");
+                else
+                    transaction.setSampleLabel(session.getId() + "|D|" + t.getMessage());
                 return transaction;
             }
             roundsByThread.put(threadId, roundsByThread.get(threadId) + 1);
         }
-
-        transaction.setSampleLabel(session.getId() + "|updated");
+        if (deleteSessions)
+            transaction.setSampleLabel("Update session");
+        else
+            transaction.setSampleLabel(session.getId() + "|updated");
         transaction.setSuccessful(true);transaction.setBytes(session.getJson().length());
         
         // pause

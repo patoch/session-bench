@@ -58,11 +58,11 @@ public class MySessionCouchbaseDAO implements MySessionDAO {
     }
 
     private ReplicateTo getReplicateTo(String consistency) {
-        if ("P1".equals(consistency)) {
+        if ("R1".equals(consistency)) {
             return ReplicateTo.ONE;
-        } else if ("P2".equals(consistency)) {
+        } else if ("R2".equals(consistency)) {
             return ReplicateTo.TWO;
-        } else if ("P3".equals(consistency)) {
+        } else if ("R3".equals(consistency)) {
             return ReplicateTo.THREE;
         } else {
             return ReplicateTo.NONE;

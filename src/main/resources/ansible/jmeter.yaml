@@ -2,7 +2,7 @@
 # Install JMeter on Ubuntu
 #
 - name: General setup
-  hosts: jmeter
+  hosts: jmeter-nodes
   user: root
 
   tasks:

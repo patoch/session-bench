@@ -2,17 +2,9 @@
 cb1
 cb2
 cb3
-cb4
-cb5
 
 
 [jmeter-nodes]
-jm1
-jm2
-jm3
-jm4
-
-[jmeter]
 jm1
 
 [none]

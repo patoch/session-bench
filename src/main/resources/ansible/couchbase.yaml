@@ -4,13 +4,13 @@
 # Initialize admin and create bucket
 #
 - name: General setup
-  hosts: none #couchbase-nodes
+  hosts: couchbase-nodes
   user: root
 
   tasks:
 
   - name: Install dependencies
-    apt: pkg=ntp state=present
+    apt: pkg=ntp state=present update_cache=yes
 
   - name: Create shell script for os setup
     action: template src=./files/setup.sh dest=/tmp/setup.sh mode=750
@@ -20,7 +20,7 @@
 
 
 - name: Couchbase installation
-  hosts: none #couchbase-nodes
+  hosts: couchbase-nodes
   user: root
 
   tasks:
