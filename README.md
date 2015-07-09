@@ -2,7 +2,7 @@
 
 Session bench is a tool to test Couchbase and Cassandra using JMeter.
 
-The scenario :
+**The test scenario :**
 * create session if none exists 
 * loop untill MAXBYTES is reached: 
     * read session data
