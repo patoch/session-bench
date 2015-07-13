@@ -21,7 +21,7 @@ public class MySessionCouchbaseDAO implements MySessionDAO {
     }
 
     public void save(MySession session, String consistency) throws Throwable {
-        StringDocument doc = StringDocument.create(session.getId(), session.getJson());
+        StringDocument doc = StringDocument.create(session.getId(), session.getData());
         if (consistency.startsWith("R")) {
             Couchbase.getBucket().upsert(doc, getReplicateTo(consistency));
         } else {
@@ -32,7 +32,7 @@ public class MySessionCouchbaseDAO implements MySessionDAO {
     public MySession load(MySession session) throws Throwable {
         StringDocument doc = Couchbase.getBucket().get(session.getId(), StringDocument.class);
         if (doc != null) {
-            session.setJson(doc.content());
+            session.setData(doc.content());
         }
         return session;
     }

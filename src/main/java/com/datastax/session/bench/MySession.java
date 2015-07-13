@@ -10,33 +10,33 @@ import java.security.*;
 public class MySession {
 
     private String id;
-    private String json;
+    private String data;
 
     public MySession(String id) {
         this.id = id;
-        this.json = "";
+        this.data = "";
     }
 
     public String getId() {
         return id;
     }
 
-    public String getJson() {
-        return json;
+    public String getData() {
+        return data;
     }
 
-    public void setJson(String json) {
-        this.json = json;
+    public void setData(String data) {
+        this.data = data;
     }
 
     public void appendRandomAscii(int count) {
-        json += RandomStringUtils.randomAscii(count);
+        data += RandomStringUtils.randomAscii(count);
     }
 
     public String getMD5() {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] mdbytes = md.digest(this.json.getBytes());
+            byte[] mdbytes = md.digest(this.data.getBytes());
             StringBuffer sb = new StringBuffer();
             for (int i = 0; i < mdbytes.length; i++) {
                 sb.append(Integer.toString((mdbytes[i] & 0xff) + 0x100, 16).substring(1));

@@ -28,7 +28,7 @@ public class MySessionCassandraDAO implements MySessionDAO {
     }
 
     public void save(MySession session, String consistency) {
-        BoundStatement bs = Cassandra.getPreparedStatement("insert").bind(session.getId(), session.getJson());
+        BoundStatement bs = Cassandra.getPreparedStatement("insert").bind(session.getId(), session.getData());
         Cassandra.getSession().execute(bs);
     }
 
@@ -38,7 +38,7 @@ public class MySessionCassandraDAO implements MySessionDAO {
         if (rs.isExhausted()) {
             return session;
         }
-        session.setJson(rs.one().getString("json"));
+        session.setData(rs.one().getString("json"));
         return session;
     }
 

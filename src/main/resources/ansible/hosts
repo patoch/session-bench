@@ -1,8 +1,5 @@
 [couchbase-nodes]
-cb1
-cb2
-cb3
-
+cb5
 
 [jmeter-nodes]
 jm1

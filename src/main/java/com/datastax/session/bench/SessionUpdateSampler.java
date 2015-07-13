@@ -13,7 +13,7 @@ import java.util.Map;
  */
 public class SessionUpdateSampler extends AbstractJavaSamplerClient implements Serializable {
 
-    protected static Map<Long, Integer> roundsByThread = new HashMap<Long, Integer>();
+    protected static Map<Long, Integer[]> roundsByThread = new HashMap<Long, Integer[]>();
     protected static MySessionDAO dao;
     protected static boolean consistencyCheckOn = true;
 
@@ -22,7 +22,8 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
 
         int maxBytes = 50 * 1024;
         int addBytes = 1024;
-        String consistency = "P3";
+        long sleepTime = 1000;
+        String consistency = "P2";
         Boolean deleteSessions = true;
 
         if (context.containsParameter("MAXBYTES")) {
@@ -31,6 +32,9 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
         if (context.containsParameter("ADDBYTES")) {
             addBytes = context.getIntParameter("ADDBYTES");
         }
+        if (context.containsParameter("SLEEPTIME")) {
+            sleepTime = context.getLongParameter("SLEEPTIME");
+        }
         if (context.containsParameter("CONSISTENCY")) {
             consistency = context.getParameter("CONSISTENCY");
         }
@@ -38,106 +42,93 @@ public class SessionUpdateSampler extends AbstractJavaSamplerClient implements S
             deleteSessions = context.getIntParameter("DELETESESSIONS") == 1;
         }
 
-        SampleResult transaction = new SampleResult();transaction.setSampleLabel("Session update latency");
-        SampleResult read = new SampleResult();read.setSampleLabel("Read latency");
-        SampleResult write = new SampleResult();write.setSampleLabel("Write Latency");
-
+        SampleResult transaction = new SampleResult();
 
         // build session id
-        long threadId =Thread.currentThread().getId();
+        long threadId = Thread.currentThread().getId();
         int round = 0;
+        int sessionUpdateCount = 0;
         if (!roundsByThread.containsKey(threadId)) {
-            roundsByThread.put(threadId, 0);
+            roundsByThread.put(threadId, new Integer[]{0, 0});
         } else {
-            round = roundsByThread.get(threadId);
+            round = roundsByThread.get(threadId)[0];
+            sessionUpdateCount = roundsByThread.get(threadId)[1];
         }
+
 
         // TRANSACTION START
         transaction.sampleStart();
         MySession session = new MySession(Thread.currentThread().getId() + "-" + round);
 
         // read
-        read.sampleStart();
         try {
             session = dao.load(session);
         } catch (Throwable t) {
             transaction.setSuccessful(false);
-            if (deleteSessions)
-                transaction.setSampleLabel("Update session");
-            else
-                transaction.setSampleLabel(session.getId() + "|R|" + t.getMessage());
+            transaction.setSampleLabel(session.getId() + "|R|" + t.getMessage());
             return transaction;
         }
-        read.sampleEnd();read.setSuccessful(true);read.setBytes(session.getJson().length());
+
+        //if (!deleteSessions && session.getData().length() != (sessionUpdateCount) * addBytes) {
+        //    System.out.println("WARNING: " + session.getId() + " has " + session.getData().length() + " bytes, expected " + sessionUpdateCount * addBytes + " at update #" + sessionUpdateCount);
+        //}
 
         // append data
         session.appendRandomAscii(addBytes);
         String md5 = session.getMD5();
-        String json = session.getJson();
 
         // write
-        write.sampleStart();
         try {
             dao.save(session, consistency);
+            transaction.setSampleLabel(session.getId() + "|W|updated");
         } catch (Throwable t) {
             transaction.setSuccessful(false);
-            if (deleteSessions)
-                transaction.setSampleLabel("Update session");
-            else
-                transaction.setSampleLabel(session.getId() + "|W|" + t.getMessage());
+            transaction.setSampleLabel(session.getId() + "|W|" + t.getMessage());
+            System.exit(0);
             return transaction;
         }
-        write.sampleEnd();
-        write.setBytes(session.getJson().length());
 
         transaction.sampleEnd();
 
 
         try {
             // check consistency
-            String md52 = dao.load(session).getMD5();
-            String json2 = dao.load(session).getJson();
-            if (consistencyCheckOn && !md52.equals(md5)) {
+            MySession session2 = dao.load(session);
+
+            if (consistencyCheckOn && !session2.getMD5().equals(md5)) {
                 transaction.setSuccessful(false);
-                if (deleteSessions)
-                    transaction.setSampleLabel("Update session");
-                else
-                    transaction.setSampleLabel(session.getId() + "|R|inconsistent");
+                System.out.println("Inconsistent read");
+                transaction.setSampleLabel(session.getId() + "|R|inconsistent");
             }
         } catch (Throwable t) {
             transaction.setSuccessful(false);
-            if (deleteSessions)
-                transaction.setSampleLabel("Update session");
-            else
-                transaction.setSampleLabel(session.getId() + "|CCR|" +  t.getMessage());
+            transaction.setSampleLabel(session.getId() + "|CCR|" +  t.getMessage());
             return transaction;
         }
 
+
+
+        transaction.setSuccessful(true);transaction.setBytes(session.getData().length());
+
         // check if round is over
-        if (session.getJson().length() >= maxBytes) {
+        if (session.getData().length() >= maxBytes) {
             try {
                 if (deleteSessions) {
                     dao.delete(session, consistency);
                 }
             } catch (Throwable t) {
                 transaction.setSuccessful(false);
-                if (deleteSessions)
-                    transaction.setSampleLabel("Update session");
-                else
-                    transaction.setSampleLabel(session.getId() + "|D|" + t.getMessage());
+                transaction.setSampleLabel(session.getId() + "|D|" + t.getMessage());
                 return transaction;
             }
-            roundsByThread.put(threadId, roundsByThread.get(threadId) + 1);
+
+            roundsByThread.put(threadId, new Integer[]{round, sessionUpdateCount + 1});
+            roundsByThread.put(threadId, new Integer[] {round + 1, 0});
         }
-        if (deleteSessions)
-            transaction.setSampleLabel("Update session");
-        else
-            transaction.setSampleLabel(session.getId() + "|updated");
-        transaction.setSuccessful(true);transaction.setBytes(session.getJson().length());
-        
+
         // pause
         try {
-            Thread.sleep(1000);
+            Thread.sleep(sleepTime);
         } catch (InterruptedException e) {
         }
 
